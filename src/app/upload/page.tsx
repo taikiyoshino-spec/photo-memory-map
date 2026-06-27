@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import { extractExif } from '@/lib/exif'
@@ -39,7 +39,7 @@ function recalcGroup(photos: PhotoWithFile[]): Pick<PhotoGroup, 'centerLat' | 'c
   }
 }
 
-export default function UploadPage() {
+function UploadContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const presetTripId = searchParams.get('tripId')
@@ -513,4 +513,12 @@ export default function UploadPage() {
   }
 
   return null
+}
+
+export default function UploadPage() {
+  return (
+    <Suspense>
+      <UploadContent />
+    </Suspense>
+  )
 }
