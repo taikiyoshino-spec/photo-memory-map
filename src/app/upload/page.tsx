@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useCallback, useRef, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import { extractExif } from '@/lib/exif'
 import { groupPhotos, PhotoGroup } from '@/lib/grouping'
@@ -41,15 +41,29 @@ function recalcGroup(photos: PhotoWithFile[]): Pick<PhotoGroup, 'centerLat' | 'c
 
 export default function UploadPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const presetTripId = searchParams.get('tripId')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const addMoreInputRef = useRef<HTMLInputElement>(null)
   const [step, setStep] = useState<Step>('select')
   const [groupStates, setGroupStates] = useState<GroupState[]>([])
   const [ungrouped, setUngrouped] = useState<PhotoWithFile[]>([])
   const [trips, setTrips] = useState<Trip[]>([])
+  const [presetTrip, setPresetTrip] = useState<Trip | null>(null)
   const [progress, setProgress] = useState('')
   const [processingError, setProcessingError] = useState<string | null>(null)
   const [exifSummary, setExifSummary] = useState<{ total: number; withGps: number; withDate: number } | null>(null)
+
+  useEffect(() => {
+    if (!presetTripId) return
+    fetch('/api/trips')
+      .then(r => r.json())
+      .then(data => {
+        const found = (data.trips ?? []).find((t: Trip) => t.id === presetTripId)
+        setPresetTrip(found ?? null)
+      })
+      .catch(() => {})
+  }, [presetTripId])
 
   const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? [])
@@ -348,12 +362,21 @@ export default function UploadPage() {
             >
               + 写真を追加
             </button>
-            <button onClick={() => setStep('confirm')} className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+            <button
+              onClick={() => presetTripId ? handleConfirm({ id: presetTripId }) : setStep('confirm')}
+              className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
               確定へ →
             </button>
           </div>
         </div>
         <input ref={addMoreInputRef} type="file" multiple accept="image/*" className="hidden" onChange={handleAddMorePhotos} />
+
+        {presetTrip && (
+          <div className="p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg text-sm text-blue-700 dark:text-blue-300">
+            📍 「{presetTrip.title}」に追加します
+          </div>
+        )}
 
         {processingError && (
           <div className="p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-400">
@@ -457,7 +480,10 @@ export default function UploadPage() {
           </div>
         )}
 
-        <button onClick={() => setStep('confirm')} className="w-full py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors">
+        <button
+          onClick={() => presetTripId ? handleConfirm({ id: presetTripId }) : setStep('confirm')}
+          className="w-full py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors"
+        >
           確定へ進む →
         </button>
       </div>

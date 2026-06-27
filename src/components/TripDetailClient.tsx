@@ -154,9 +154,17 @@ export default function TripDetailClient({ trip: initialTrip, visits: initialVis
             <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               {startDate} 〜 {endDate}
             </div>
-            <div className="flex gap-4 mt-3 text-sm text-gray-600 dark:text-gray-300">
-              <span>📷 {totalPhotos}枚</span>
-              <span>📍 {visits.length}施設</span>
+            <div className="flex items-center justify-between mt-3">
+              <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-300">
+                <span>📷 {totalPhotos}枚</span>
+                <span>📍 {visits.length}施設</span>
+              </div>
+              <Link
+                href={`/upload?tripId=${initialTrip.id}`}
+                className="text-sm bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                + 写真を追加
+              </Link>
             </div>
           </>
         )}
