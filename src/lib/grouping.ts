@@ -86,15 +86,5 @@ export function groupPhotos(photos: PhotoWithFile[]): {
     }
   })
 
-  // 1枚のみで時間情報もない写真は未分類へ
-  const ungrouped: PhotoWithFile[] = []
-  const validGroups = groups.filter((g) => {
-    if (g.photos.length === 1 && !g.hasGps) {
-      ungrouped.push(g.photos[0])
-      return false
-    }
-    return true
-  })
-
-  return { groups: validGroups, ungrouped }
+  return { groups, ungrouped: [] }
 }
