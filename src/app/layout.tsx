@@ -31,10 +31,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </Link>
               <nav className="flex items-center gap-3">
                 <Link href="/upload" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
-                  📷 アップロード
+                  📷
+                </Link>
+                <Link href="/places" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                  📍 施設
                 </Link>
                 <Link href="/trips" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
-                  ✈️ 旅行一覧
+                  ✈️ 旅行
                 </Link>
                 <Link href="/debug" className="text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
                   🔧
