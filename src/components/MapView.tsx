@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Place } from '@/types'
 
 interface Props {
@@ -12,12 +12,12 @@ export default function MapView({ places, onPlaceClick }: Props) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<import('leaflet').Map | null>(null)
   const markersRef = useRef<import('leaflet').Marker[]>([])
+  const [mapReady, setMapReady] = useState(false)
 
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return
 
     import('leaflet').then((L) => {
-      // デフォルトアイコンのパスを修正
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       delete (L.Icon.Default.prototype as any)._getIconUrl
       L.Icon.Default.mergeOptions({
@@ -37,6 +37,7 @@ export default function MapView({ places, onPlaceClick }: Props) {
       }).addTo(map)
 
       mapInstanceRef.current = map
+      setMapReady(true)
     })
 
     return () => {
@@ -59,8 +60,16 @@ export default function MapView({ places, onPlaceClick }: Props) {
           .on('click', () => onPlaceClick(place))
         markersRef.current.push(marker)
       })
+
+      // 複数ピンがある場合は全体が見えるようにズーム調整
+      if (places.length > 0) {
+        const bounds = L.latLngBounds(places.map(p => [p.lat, p.lng]))
+        mapInstanceRef.current!.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 })
+      }
     })
-  }, [places, onPlaceClick])
+  // mapReady を依存に追加することで、地図初期化後に確実にマーカーを描画する
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [places, onPlaceClick, mapReady])
 
   return <div ref={mapRef} className="w-full h-full" />
 }
