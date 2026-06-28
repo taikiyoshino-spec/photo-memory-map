@@ -1,3 +1,39 @@
+export interface NominatimSearchResult {
+  place_id: number
+  display_name: string
+  name: string
+  lat: string
+  lon: string
+}
+
+export async function searchPlacesByName(query: string): Promise<NominatimSearchResult[]> {
+  if (!query.trim()) return []
+  const url = new URL('https://nominatim.openstreetmap.org/search')
+  url.searchParams.set('q', query)
+  url.searchParams.set('format', 'json')
+  url.searchParams.set('accept-language', 'ja')
+  url.searchParams.set('limit', '5')
+  url.searchParams.set('countrycodes', 'jp')
+
+  try {
+    const res = await fetch(url.toString(), {
+      headers: { 'User-Agent': 'photo-memory-map/1.0 (personal travel app)' },
+      signal: AbortSignal.timeout(5000),
+    })
+    if (!res.ok) return []
+    const data = await res.json()
+    return data.map((item: { place_id: number; display_name: string; name?: string; lat: string; lon: string }) => ({
+      place_id: item.place_id,
+      display_name: item.display_name,
+      name: item.name || item.display_name.split(',')[0].trim(),
+      lat: item.lat,
+      lon: item.lon,
+    }))
+  } catch {
+    return []
+  }
+}
+
 export interface NominatimPlace {
   place_id: number
   display_name: string
