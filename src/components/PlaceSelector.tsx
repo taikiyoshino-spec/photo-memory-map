@@ -1,8 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
 import { Place } from '@/types'
 import { searchPlacesByName, NominatimSearchResult } from '@/lib/nominatim'
+
+const LocationPicker = dynamic(() => import('./LocationPicker'), { ssr: false })
 
 interface Props {
   candidates: Place[]
@@ -35,6 +38,7 @@ export default function PlaceSelector({
   const [newName, setNewName] = useState('')
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState('')
+  const [showMap, setShowMap] = useState(false)
 
   const hasValidGps = Number.isFinite(centerLat) && Number.isFinite(centerLng) &&
     (centerLat !== 35.6895 || centerLng !== 139.6917)
@@ -87,11 +91,25 @@ export default function PlaceSelector({
     setSelectedCoords(null)
     setNewName('')
     setError('')
+    setShowMap(false)
   }
 
   const canCreate = !!selectedCoords || hasValidGps
 
   return (
+    <>
+    {showMap && (
+      <LocationPicker
+        initialLat={hasValidGps ? centerLat : undefined}
+        initialLng={hasValidGps ? centerLng : undefined}
+        onConfirm={(lat, lng, name) => {
+          setSelectedCoords({ lat, lng, fromSearch: true })
+          if (name && !newName) setNewName(name)
+          setShowMap(false)
+        }}
+        onClose={() => setShowMap(false)}
+      />
+    )}
     <div className="space-y-1">
       {candidates.map((place) => (
         <button
@@ -135,6 +153,13 @@ export default function PlaceSelector({
               className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg disabled:opacity-40 transition-colors"
             >
               {searching ? '…' : '🔍'}
+            </button>
+            <button
+              onClick={() => setShowMap(true)}
+              className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg transition-colors"
+              title="地図から選ぶ"
+            >
+              🗺
             </button>
           </div>
 
@@ -211,5 +236,6 @@ export default function PlaceSelector({
         </div>
       )}
     </div>
+    </>
   )
 }

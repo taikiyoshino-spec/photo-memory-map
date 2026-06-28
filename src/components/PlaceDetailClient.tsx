@@ -1,10 +1,13 @@
 'use client'
 
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Place, Visit, Photo, Trip } from '@/types'
 import { searchPlacesByName, NominatimSearchResult } from '@/lib/nominatim'
+
+const LocationPicker = dynamic(() => import('./LocationPicker'), { ssr: false })
 
 interface VisitWithTrip extends Visit {
   trip: Trip
@@ -29,6 +32,7 @@ export default function PlaceDetailClient({ place: initialPlace, visits }: Props
   const [searchResults, setSearchResults] = useState<NominatimSearchResult[]>([])
   const [searching, setSearching] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
+  const [showMap, setShowMap] = useState(false)
 
   const mainPhoto = visits[0]?.photos[0]
 
@@ -88,6 +92,19 @@ export default function PlaceDetailClient({ place: initialPlace, visits }: Props
   const coordsChanged = coords.lat !== initialPlace.lat || coords.lng !== initialPlace.lng
 
   return (
+    <>
+    {showMap && (
+      <LocationPicker
+        initialLat={coords.lat}
+        initialLng={coords.lng}
+        onConfirm={(lat, lng, suggestedName) => {
+          setCoords({ lat, lng })
+          if (suggestedName && name === initialPlace.name) setName(suggestedName)
+          setShowMap(false)
+        }}
+        onClose={() => setShowMap(false)}
+      />
+    )}
     <div className="px-4 py-6 space-y-6">
       {/* ヘッダー */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
@@ -116,14 +133,22 @@ export default function PlaceDetailClient({ place: initialPlace, visits }: Props
                   </div>
                 </div>
 
-                {/* 場所を再検索 */}
+                {/* 場所を再検索 / 地図から選ぶ */}
                 {!showSearch ? (
-                  <button
-                    onClick={() => setShowSearch(true)}
-                    className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                  >
-                    🔍 場所を再検索して位置を変更
-                  </button>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowSearch(true)}
+                      className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      🔍 名前で検索
+                    </button>
+                    <button
+                      onClick={() => setShowMap(true)}
+                      className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      🗺 地図から選ぶ
+                    </button>
+                  </div>
                 ) : (
                   <div className="space-y-2">
                     <div className="flex gap-1.5">
@@ -242,5 +267,6 @@ export default function PlaceDetailClient({ place: initialPlace, visits }: Props
         )}
       </div>
     </div>
+    </>
   )
 }
