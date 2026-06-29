@@ -1,6 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 
+// DELETE /api/places/[id] - 訪問記録のない施設を削除
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+
+  // 訪問記録が残っていれば削除不可
+  const { count, error: countErr } = await supabase
+    .from('visits')
+    .select('id', { count: 'exact', head: true })
+    .eq('place_id', id)
+
+  if (countErr) {
+    return NextResponse.json({ error: countErr.message }, { status: 500 })
+  }
+  if ((count ?? 0) > 0) {
+    return NextResponse.json({ error: '訪問記録があるため削除できません' }, { status: 400 })
+  }
+
+  const { error } = await supabase.from('places').delete().eq('id', id)
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+  return NextResponse.json({ ok: true })
+}
+
 // PATCH /api/places/[id] - 施設名・位置情報を更新
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

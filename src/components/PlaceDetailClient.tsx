@@ -91,6 +91,17 @@ export default function PlaceDetailClient({ place: initialPlace, visits }: Props
 
   const coordsChanged = coords.lat !== initialPlace.lat || coords.lng !== initialPlace.lng
 
+  async function handleDelete() {
+    if (!confirm(`「${name}」を削除しますか？\nこの操作は元に戻せません。`)) return
+    const res = await fetch(`/api/places/${initialPlace.id}`, { method: 'DELETE' })
+    if (!res.ok) {
+      const json = await res.json()
+      alert(json.error ?? '削除に失敗しました')
+      return
+    }
+    router.push('/places')
+  }
+
   return (
     <>
     {showMap && (
@@ -228,6 +239,16 @@ export default function PlaceDetailClient({ place: initialPlace, visits }: Props
           </div>
         </div>
       </div>
+
+      {/* 訪問記録なしの場合は削除ボタン */}
+      {visits.length === 0 && !isEditing && (
+        <button
+          onClick={handleDelete}
+          className="w-full py-3 rounded-xl border border-red-300 dark:border-red-700 text-red-500 dark:text-red-400 text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+        >
+          🗑 この施設を削除
+        </button>
+      )}
 
       {/* タイムライン */}
       <div className="space-y-4">
