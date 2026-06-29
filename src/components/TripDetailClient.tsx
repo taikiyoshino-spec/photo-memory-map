@@ -4,9 +4,10 @@ import { useState } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Trip, Photo } from '@/types'
+import { Trip, Photo, Place } from '@/types'
 
 const VisitPhotoEditor = dynamic(() => import('./VisitPhotoEditor'), { ssr: false })
+const MapView = dynamic(() => import('./MapView'), { ssr: false })
 
 interface PlaceData {
   id: string
@@ -50,10 +51,19 @@ export default function TripDetailClient({ trip: initialTrip, visits: initialVis
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [editingVisit, setEditingVisit] = useState<VisitData | null>(null)
+  const [view, setView] = useState<'timeline' | 'map'>('timeline')
 
   function handlePhotosChange(visitId: string, photos: Photo[]) {
     setVisits((prev) => prev.map((v) => (v.id === visitId ? { ...v, photos } : v)))
   }
+
+  const tripPlaces: Place[] = Array.from(
+    new Map(
+      visits
+        .filter((v) => v.places !== null)
+        .map((v) => [v.place_id, { id: v.place_id, name: v.places!.name, lat: v.places!.lat, lng: v.places!.lng, created_from: 'auto' as const }])
+    ).values()
+  )
 
   const totalPhotos = visits.reduce((acc, v) => acc + v.photos.length, 0)
 
@@ -185,7 +195,48 @@ export default function TripDetailClient({ trip: initialTrip, visits: initialVis
         </p>
       )}
 
+      {/* タブ切り替え */}
+      <div className="flex rounded-xl overflow-hidden border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+        <button
+          onClick={() => setView('timeline')}
+          className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
+            view === 'timeline'
+              ? 'bg-blue-600 text-white'
+              : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700'
+          }`}
+        >
+          📋 タイムライン
+        </button>
+        <button
+          onClick={() => setView('map')}
+          className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
+            view === 'map'
+              ? 'bg-blue-600 text-white'
+              : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700'
+          }`}
+        >
+          🗺️ マップ
+        </button>
+      </div>
+
+      {/* マップビュー */}
+      {view === 'map' && (
+        <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-slate-700 h-[65vh]">
+          {tripPlaces.length === 0 ? (
+            <div className="h-full flex items-center justify-center text-gray-400 dark:text-gray-500 text-sm bg-white dark:bg-slate-800">
+              表示できるピンがありません
+            </div>
+          ) : (
+            <MapView
+              places={tripPlaces}
+              onPlaceClick={(place) => router.push(`/places/${place.id}`)}
+            />
+          )}
+        </div>
+      )}
+
       {/* 日別タイムライン */}
+      {view === 'timeline' && (
       <div className="space-y-6">
         {days.map(([day, dayVisits], dayIdx) => (
           <div key={day}>
@@ -270,6 +321,7 @@ export default function TripDetailClient({ trip: initialTrip, visits: initialVis
           </div>
         )}
       </div>
+      )}
 
       {editingVisit && (
         <VisitPhotoEditor
