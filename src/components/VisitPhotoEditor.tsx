@@ -52,11 +52,7 @@ export default function VisitPhotoEditor({
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   async function handleRemove(photoId: string) {
-    await fetch(`/api/photos/${photoId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ visit_id: null }),
-    })
+    await fetch(`/api/photos/${photoId}`, { method: 'DELETE' })
     const updated = photos.filter((p) => p.id !== photoId)
     setPhotos(updated)
     onPhotosChange(visitId, updated)
