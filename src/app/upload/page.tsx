@@ -224,7 +224,7 @@ function UploadContent() {
     )
   }, [])
 
-  const compressImage = (file: File, maxPx = 1920, quality = 0.82): Promise<Blob> =>
+  const compressImage = (file: File, maxPx = 1280, quality = 0.75): Promise<Blob> =>
     new Promise((resolve, reject) => {
       const img = new Image()
       const url = URL.createObjectURL(file)

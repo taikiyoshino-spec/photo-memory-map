@@ -17,7 +17,7 @@ interface Props {
   onPhotosChange: (visitId: string, photos: Photo[]) => void
 }
 
-function compressImage(file: File, maxPx = 1920, quality = 0.82): Promise<Blob> {
+function compressImage(file: File, maxPx = 1280, quality = 0.75): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const img = new Image()
     const url = URL.createObjectURL(file)
