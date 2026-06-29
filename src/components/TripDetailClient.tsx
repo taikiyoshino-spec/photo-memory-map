@@ -1,9 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Trip, Photo } from '@/types'
+
+const VisitPhotoEditor = dynamic(() => import('./VisitPhotoEditor'), { ssr: false })
 
 interface PlaceData {
   id: string
@@ -46,6 +49,11 @@ export default function TripDetailClient({ trip: initialTrip, visits: initialVis
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [editingVisit, setEditingVisit] = useState<VisitData | null>(null)
+
+  function handlePhotosChange(visitId: string, photos: Photo[]) {
+    setVisits((prev) => prev.map((v) => (v.id === visitId ? { ...v, photos } : v)))
+  }
 
   const totalPhotos = visits.reduce((acc, v) => acc + v.photos.length, 0)
 
@@ -215,6 +223,13 @@ export default function TripDetailClient({ trip: initialTrip, visits: initialVis
                         })}
                       </div>
                     </Link>
+                    <button
+                      onClick={() => setEditingVisit(visit)}
+                      className="px-3 text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700 hover:text-blue-500 transition-colors"
+                      title="写真を変更"
+                    >
+                      📷
+                    </button>
                     {isEditing && (
                       <button
                         onClick={() => handleDeleteVisit(visit.id)}
@@ -255,6 +270,16 @@ export default function TripDetailClient({ trip: initialTrip, visits: initialVis
           </div>
         )}
       </div>
+
+      {editingVisit && (
+        <VisitPhotoEditor
+          visitId={editingVisit.id}
+          visitName={editingVisit.places?.name ?? '施設名なし'}
+          initialPhotos={editingVisit.photos}
+          onClose={() => setEditingVisit(null)}
+          onPhotosChange={handlePhotosChange}
+        />
+      )}
     </div>
   )
 }
