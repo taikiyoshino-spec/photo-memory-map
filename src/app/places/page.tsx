@@ -1,11 +1,13 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { getUserFromCookies } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
-async function getPlacesList() {
+async function getPlacesList(userId: string) {
   const [{ data: places }, { data: visits }] = await Promise.all([
-    supabase.from('places').select('id, name, lat, lng'),
+    supabase.from('places').select('id, name, lat, lng').eq('user_id', userId),
     supabase.from('visits').select('place_id, visited_at_start'),
   ])
 
@@ -21,7 +23,7 @@ async function getPlacesList() {
   }
 
   return (places ?? [])
-    .map(p => ({
+    .map((p) => ({
       ...p,
       visitCount: visitMap.get(p.id)?.count ?? 0,
       lastVisit: visitMap.get(p.id)?.lastVisit ?? null,
@@ -35,7 +37,9 @@ async function getPlacesList() {
 }
 
 export default async function PlacesPage() {
-  const places = await getPlacesList()
+  const user = await getUserFromCookies()
+  if (!user) redirect('/login')
+  const places = await getPlacesList(user.id)
 
   return (
     <div className="px-4 py-6">
@@ -56,7 +60,7 @@ export default async function PlacesPage() {
         </div>
       ) : (
         <div className="space-y-2">
-          {places.map(place => (
+          {places.map((place) => (
             <Link
               key={place.id}
               href={`/places/${place.id}`}

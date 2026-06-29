@@ -1,5 +1,6 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { getUserFromCookies } from '@/lib/auth'
 import TripDetailClient from '@/components/TripDetailClient'
 import { Photo } from '@/types'
 
@@ -15,8 +16,13 @@ interface VisitData {
   photos: Photo[]
 }
 
-async function getTripData(id: string) {
-  const { data: trip } = await supabase.from('trips').select('*').eq('id', id).single()
+async function getTripData(id: string, userId: string) {
+  const { data: trip } = await supabase
+    .from('trips')
+    .select('*')
+    .eq('id', id)
+    .eq('user_id', userId)
+    .single()
   if (!trip) return null
 
   const { data: visits } = await supabase
@@ -48,8 +54,11 @@ async function getTripData(id: string) {
 }
 
 export default async function TripPage({ params }: { params: Promise<{ id: string }> }) {
+  const user = await getUserFromCookies()
+  if (!user) redirect('/login')
+
   const { id } = await params
-  const data = await getTripData(id)
+  const data = await getTripData(id, user.id)
   if (!data) notFound()
 
   return <TripDetailClient trip={data.trip} visits={data.visits} />

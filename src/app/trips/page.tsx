@@ -1,18 +1,23 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { getUserFromCookies } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
-async function getTrips() {
+async function getTrips(userId: string) {
   const { data } = await supabase
     .from('trips')
     .select('*')
+    .eq('user_id', userId)
     .order('start_date', { ascending: false })
   return data ?? []
 }
 
 export default async function TripsPage() {
-  const trips = await getTrips()
+  const user = await getUserFromCookies()
+  if (!user) redirect('/login')
+  const trips = await getTrips(user.id)
 
   return (
     <div className="px-4 py-6">

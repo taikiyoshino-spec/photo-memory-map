@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { getUserFromRequest } from '@/lib/auth'
 
 // POST /api/groups/confirm
 export async function POST(req: NextRequest) {
+  const user = await getUserFromRequest(req)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { groups, trip } = await req.json()
 
   // 1. Tripを取得または作成
@@ -12,7 +16,7 @@ export async function POST(req: NextRequest) {
   } else {
     const { data: newTrip, error } = await supabase
       .from('trips')
-      .insert({ title: trip.title, start_date: trip.startDate, end_date: trip.endDate })
+      .insert({ title: trip.title, start_date: trip.startDate, end_date: trip.endDate, user_id: user.id })
       .select('id')
       .single()
     if (error || !newTrip) {
@@ -33,7 +37,6 @@ export async function POST(req: NextRequest) {
   for (const g of groups) {
     if (!g.placeId) continue
 
-    // Group record保存
     const { data: group, error: groupErr } = await supabase
       .from('groups')
       .insert({
@@ -43,6 +46,7 @@ export async function POST(req: NextRequest) {
         time_end: g.timeEnd,
         selected_place_id: g.placeId,
         status: 'confirmed',
+        user_id: user.id,
       })
       .select('id')
       .single()
@@ -53,7 +57,6 @@ export async function POST(req: NextRequest) {
       continue
     }
 
-    // Visit作成
     const { data: visit, error: visitErr } = await supabase
       .from('visits')
       .insert({
@@ -73,7 +76,6 @@ export async function POST(req: NextRequest) {
 
     visitIds.push(visit.id)
 
-    // Photos を group + visit に紐付け
     if (g.photoIds && g.photoIds.length > 0) {
       const { error: photoErr } = await supabase
         .from('photos')

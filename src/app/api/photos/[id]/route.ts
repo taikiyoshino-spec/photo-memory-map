@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { getUserFromRequest } from '@/lib/auth'
 
 // PATCH /api/photos/[id] - visit_id を更新（紐付け変更・解除）
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const user = await getUserFromRequest(req)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { id } = await params
   const body = await req.json()
 
@@ -13,6 +17,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     .from('photos')
     .update(update)
     .eq('id', id)
+    .eq('user_id', user.id)
     .select()
     .single()
 
@@ -24,14 +29,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 // DELETE /api/photos/[id] - DBレコードとStorageファイルを完全削除
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const user = await getUserFromRequest(req)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { id } = await params
 
-  // まずDBからURLを取得
   const { data: photo, error: fetchErr } = await supabase
     .from('photos')
     .select('image_url')
     .eq('id', id)
+    .eq('user_id', user.id)
     .single()
 
   if (fetchErr || !photo) {
@@ -39,7 +47,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   }
 
   // StorageのファイルパスをURLから抽出
-  // URL形式: https://xxx.supabase.co/storage/v1/object/public/photos/filename.jpg
   const url = new URL(photo.image_url)
   const pathParts = url.pathname.split('/public/photos/')
   if (pathParts.length === 2) {
@@ -47,11 +54,9 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     const { error: storageErr } = await supabase.storage.from('photos').remove([fileName])
     if (storageErr) {
       console.error('storage delete error:', storageErr)
-      // Storageの削除に失敗してもDBレコードは削除を続行
     }
   }
 
-  // DBレコード削除
   const { error: dbErr } = await supabase.from('photos').delete().eq('id', id)
   if (dbErr) {
     console.error('photos DELETE error:', dbErr)

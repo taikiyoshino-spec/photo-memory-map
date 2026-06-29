@@ -1,5 +1,6 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { getUserFromCookies } from '@/lib/auth'
 import PlaceDetailClient from '@/components/PlaceDetailClient'
 import { Visit, Photo, Trip } from '@/types'
 
@@ -10,8 +11,13 @@ interface VisitWithTrip extends Visit {
   photos: Photo[]
 }
 
-async function getPlaceData(id: string) {
-  const { data: place } = await supabase.from('places').select('*').eq('id', id).single()
+async function getPlaceData(id: string, userId: string) {
+  const { data: place } = await supabase
+    .from('places')
+    .select('*')
+    .eq('id', id)
+    .eq('user_id', userId)
+    .single()
   if (!place) return null
 
   const { data: visits } = await supabase
@@ -44,8 +50,11 @@ async function getPlaceData(id: string) {
 }
 
 export default async function PlacePage({ params }: { params: Promise<{ id: string }> }) {
+  const user = await getUserFromCookies()
+  if (!user) redirect('/login')
+
   const { id } = await params
-  const data = await getPlaceData(id)
+  const data = await getPlaceData(id, user.id)
   if (!data) notFound()
 
   return <PlaceDetailClient place={data.place} visits={data.visits} />

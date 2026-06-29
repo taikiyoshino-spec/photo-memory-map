@@ -3,6 +3,7 @@ import { Geist } from 'next/font/google'
 import Link from 'next/link'
 import ThemeProvider from '@/components/ThemeProvider'
 import ThemeToggle from '@/components/ThemeToggle'
+import LogoutButton from '@/components/LogoutButton'
 import './globals.css'
 
 const geist = Geist({ subsets: ['latin'] })
@@ -43,6 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   🔧
                 </Link>
                 <ThemeToggle />
+                <LogoutButton />
               </nav>
             </div>
           </header>

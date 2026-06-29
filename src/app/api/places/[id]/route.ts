@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { getUserFromRequest } from '@/lib/auth'
 
 // DELETE /api/places/[id] - 訪問記録のない施設を削除
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const user = await getUserFromRequest(req)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { id } = await params
 
-  // 訪問記録が残っていれば削除不可
   const { count, error: countErr } = await supabase
     .from('visits')
     .select('id', { count: 'exact', head: true })
@@ -18,7 +21,12 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: '訪問記録があるため削除できません' }, { status: 400 })
   }
 
-  const { error } = await supabase.from('places').delete().eq('id', id)
+  const { error } = await supabase
+    .from('places')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id)
+
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
@@ -27,6 +35,9 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
 // PATCH /api/places/[id] - 施設名・位置情報を更新
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const user = await getUserFromRequest(req)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { id } = await params
   const { name, lat, lng } = await req.json()
 
@@ -44,6 +55,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     .from('places')
     .update(update)
     .eq('id', id)
+    .eq('user_id', user.id)
     .select()
     .single()
 
