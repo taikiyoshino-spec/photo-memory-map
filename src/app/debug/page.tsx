@@ -57,6 +57,28 @@ export default function DebugPage() {
 
   const [cleanupResult, setCleanupResult] = useState<string | null>(null)
   const [cleanupLoading, setCleanupLoading] = useState(false)
+  const [prefectureResult, setPrefectureResult] = useState<string | null>(null)
+  const [prefectureLoading, setPrefectureLoading] = useState(false)
+
+  const handleBackfillPrefectures = async () => {
+    setPrefectureLoading(true)
+    setPrefectureResult(null)
+    let total = 0
+    try {
+      while (true) {
+        const res = await fetch('/api/admin/backfill-prefectures')
+        const json = await res.json()
+        total += json.processed ?? 0
+        if (json.remaining === 0) break
+        setPrefectureResult(`処理中... ${total}件完了、残り${json.remaining}件`)
+      }
+      setPrefectureResult(`完了: ${total}件の都道府県情報を更新しました`)
+    } catch (e) {
+      setPrefectureResult(`エラー: ${String(e)}`)
+    } finally {
+      setPrefectureLoading(false)
+    }
+  }
 
   const handleCleanup = async () => {
     if (!confirm('visit に紐づいていない写真（24時間以上前）を削除します。よろしいですか？')) return
@@ -75,6 +97,26 @@ export default function DebugPage() {
 
   return (
     <div className="p-4 max-w-2xl mx-auto space-y-8">
+      {/* 都道府県バックフィル */}
+      <div>
+        <h1 className="text-lg font-bold mb-2">都道府県情報を更新</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+          都道府県が未設定の施設を Nominatim で一括取得します（施設数×約1秒かかります）。
+        </p>
+        <button
+          onClick={handleBackfillPrefectures}
+          disabled={prefectureLoading}
+          className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+        >
+          {prefectureLoading ? '取得中...' : '🗾 都道府県を一括取得'}
+        </button>
+        {prefectureResult && (
+          <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">{prefectureResult}</p>
+        )}
+      </div>
+
+      <hr className="border-gray-200 dark:border-slate-700" />
+
       {/* 孤立写真クリーンアップ */}
       <div>
         <h1 className="text-lg font-bold mb-2">孤立写真クリーンアップ</h1>

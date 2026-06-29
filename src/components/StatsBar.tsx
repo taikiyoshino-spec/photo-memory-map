@@ -19,10 +19,10 @@ export default function StatsBar({ placeCount, tripCount, prefectureCount }: Pro
         <div className="text-xs text-gray-500 dark:text-gray-400">旅行</div>
       </Link>
       <div className="w-px bg-gray-200 dark:bg-slate-600" />
-      <div className="text-center">
+      <Link href="/prefectures" className="text-center hover:opacity-70 transition-opacity">
         <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{prefectureCount}</div>
         <div className="text-xs text-gray-500 dark:text-gray-400">都道府県</div>
-      </div>
+      </Link>
     </div>
   )
 }

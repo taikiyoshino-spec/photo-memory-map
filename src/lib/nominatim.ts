@@ -88,6 +88,27 @@ export async function searchNearbyPlaces(lat: number, lng: number): Promise<Nomi
   }
 }
 
+export async function getPrefecture(lat: number, lng: number): Promise<string | null> {
+  const url = new URL('https://nominatim.openstreetmap.org/reverse')
+  url.searchParams.set('format', 'json')
+  url.searchParams.set('lat', String(lat))
+  url.searchParams.set('lon', String(lng))
+  url.searchParams.set('accept-language', 'ja')
+  url.searchParams.set('zoom', '10')
+
+  try {
+    const res = await fetch(url.toString(), {
+      headers: { 'User-Agent': 'photo-memory-map/1.0 (personal travel app)' },
+      signal: AbortSignal.timeout(5000),
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return (data.address?.state as string) ?? null
+  } catch {
+    return null
+  }
+}
+
 export async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
   const url = new URL('https://nominatim.openstreetmap.org/reverse')
   url.searchParams.set('format', 'json')

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { getUserFromRequest } from '@/lib/auth'
+import { getPrefecture } from '@/lib/nominatim'
 
 // POST /api/places - 新規施設作成
 export async function POST(req: NextRequest) {
@@ -37,9 +38,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ place: existing })
   }
 
+  const prefecture = await getPrefecture(lat, lng)
+
   const { data, error } = await supabase
     .from('places')
-    .insert({ name: name.trim(), lat, lng, created_from: 'manual', user_id: user.id })
+    .insert({ name: name.trim(), lat, lng, created_from: 'manual', user_id: user.id, prefecture })
     .select()
     .single()
 

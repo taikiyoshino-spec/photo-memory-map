@@ -10,13 +10,17 @@ export async function GET(req: NextRequest) {
   const [{ count: placeCount }, { count: tripCount }, { data: places }] = await Promise.all([
     supabase.from('places').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
     supabase.from('trips').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
-    supabase.from('places').select('id, name, lat, lng').eq('user_id', user.id),
+    supabase.from('places').select('id, name, lat, lng, prefecture').eq('user_id', user.id),
   ])
+
+  const prefectureCount = new Set(
+    (places ?? []).map((p) => p.prefecture).filter(Boolean)
+  ).size
 
   return NextResponse.json({
     placeCount: placeCount ?? 0,
     tripCount: tripCount ?? 0,
-    prefectureCount: 0,
+    prefectureCount,
     places: places ?? [],
   })
 }

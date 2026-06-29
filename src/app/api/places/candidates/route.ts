@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { getUserFromRequest } from '@/lib/auth'
-import { searchNearbyPlaces, reverseGeocode } from '@/lib/nominatim'
+import { searchNearbyPlaces, reverseGeocode, getPrefecture } from '@/lib/nominatim'
 import { Place } from '@/types'
 
 // GET /api/places/candidates?lat=...&lng=...
@@ -31,6 +31,9 @@ export async function GET(req: NextRequest) {
 
   const allCandidates: Place[] = [...(dbPlaces ?? [])]
 
+  // 都道府県を取得（周辺施設作成に共通利用）
+  const prefecture = await getPrefecture(lat, lng)
+
   // Nominatimで周辺スポットを検索
   const nominatimPlaces = await searchNearbyPlaces(lat, lng)
   for (const np of nominatimPlaces.slice(0, 5)) {
@@ -41,7 +44,7 @@ export async function GET(req: NextRequest) {
     if (!exists) {
       const { data } = await supabase
         .from('places')
-        .insert({ name: np.name, lat: npLat, lng: npLng, created_from: 'auto', user_id: user.id })
+        .insert({ name: np.name, lat: npLat, lng: npLng, created_from: 'auto', user_id: user.id, prefecture })
         .select()
         .single()
       if (data) allCandidates.push(data)
@@ -53,7 +56,7 @@ export async function GET(req: NextRequest) {
     if (geoName) {
       const { data } = await supabase
         .from('places')
-        .insert({ name: geoName, lat, lng, created_from: 'auto', user_id: user.id })
+        .insert({ name: geoName, lat, lng, created_from: 'auto', user_id: user.id, prefecture })
         .select()
         .single()
       if (data) allCandidates.push(data)
