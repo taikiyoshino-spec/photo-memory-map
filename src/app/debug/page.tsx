@@ -55,10 +55,28 @@ export default function DebugPage() {
     }
   }
 
+  const [migrateResult, setMigrateResult] = useState<string | null>(null)
+  const [migrateLoading, setMigrateLoading] = useState(false)
   const [cleanupResult, setCleanupResult] = useState<string | null>(null)
   const [cleanupLoading, setCleanupLoading] = useState(false)
   const [prefectureResult, setPrefectureResult] = useState<string | null>(null)
   const [prefectureLoading, setPrefectureLoading] = useState(false)
+
+  const handleMigrateUserData = async () => {
+    if (!confirm('user_id が未設定の既存データ（施設・旅行・写真）をすべて自分のアカウントに紐づけます。\n\n他のユーザーがいる場合は実行しないでください。')) return
+    setMigrateLoading(true)
+    setMigrateResult(null)
+    try {
+      const res = await fetch('/api/admin/migrate-user-data', { method: 'POST' })
+      const json = await res.json()
+      const { places, trips, photos, groups } = json.updated ?? {}
+      setMigrateResult(`完了: 施設${places}件・旅行${trips}件・写真${photos}件・グループ${groups}件を紐づけました`)
+    } catch (e) {
+      setMigrateResult(`エラー: ${String(e)}`)
+    } finally {
+      setMigrateLoading(false)
+    }
+  }
 
   const handleBackfillPrefectures = async () => {
     setPrefectureLoading(true)
@@ -97,6 +115,27 @@ export default function DebugPage() {
 
   return (
     <div className="p-4 max-w-2xl mx-auto space-y-8">
+      {/* 既存データのユーザー紐づけ */}
+      <div>
+        <h1 className="text-lg font-bold mb-2">既存データを自分のアカウントに紐づける</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+          ログイン機能追加前に登録した施設・旅行・写真をこのアカウントに紐づけます。<br />
+          <span className="text-red-500">他のユーザーがいる場合は実行しないでください。</span>
+        </p>
+        <button
+          onClick={handleMigrateUserData}
+          disabled={migrateLoading}
+          className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+        >
+          {migrateLoading ? '処理中...' : '🔗 既存データを紐づける'}
+        </button>
+        {migrateResult && (
+          <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">{migrateResult}</p>
+        )}
+      </div>
+
+      <hr className="border-gray-200 dark:border-slate-700" />
+
       {/* 都道府県バックフィル */}
       <div>
         <h1 className="text-lg font-bold mb-2">都道府県情報を更新</h1>
