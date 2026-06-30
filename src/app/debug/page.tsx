@@ -146,7 +146,6 @@ export default function DebugPage() {
           {result}
         </pre>
       )}
-      </div>
     </div>
   )
 }
