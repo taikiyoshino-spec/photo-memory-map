@@ -48,6 +48,7 @@ export default function TripDetailClient({ trip: initialTrip, visits: initialVis
   const [endDate, setEndDate] = useState(initialTrip.end_date)
   const [visits, setVisits] = useState(initialVisits)
   const [saving, setSaving] = useState(false)
+  const [deletingTrip, setDeletingTrip] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [editingVisit, setEditingVisit] = useState<VisitData | null>(null)
@@ -94,6 +95,20 @@ export default function TripDetailClient({ trip: initialTrip, visits: initialVis
       setError(e instanceof Error ? e.message : '保存に失敗しました')
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleDeleteTrip() {
+    if (!confirm(`「${title}」を削除しますか？\n\nこの旅行に紐づく訪問記録と写真もすべて削除されます。この操作は取り消せません。`)) return
+    setDeletingTrip(true)
+    try {
+      const res = await fetch(`/api/trips/${initialTrip.id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error()
+      router.push('/trips')
+      router.refresh()
+    } catch {
+      alert('削除に失敗しました')
+      setDeletingTrip(false)
     }
   }
 
@@ -162,12 +177,21 @@ export default function TripDetailClient({ trip: initialTrip, visits: initialVis
           <>
             <div className="flex items-start justify-between gap-2">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{title}</h1>
-              <button
-                onClick={() => setIsEditing(true)}
-                className="flex-shrink-0 text-sm text-blue-600 dark:text-blue-400 hover:underline"
-              >
-                編集
-              </button>
+              <div className="flex gap-3 flex-shrink-0">
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  編集
+                </button>
+                <button
+                  onClick={handleDeleteTrip}
+                  disabled={deletingTrip}
+                  className="text-sm text-red-500 dark:text-red-400 hover:underline disabled:opacity-50"
+                >
+                  {deletingTrip ? '削除中...' : '削除'}
+                </button>
+              </div>
             </div>
             <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               {startDate} 〜 {endDate}
